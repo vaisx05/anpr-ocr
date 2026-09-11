@@ -514,6 +514,7 @@ class ALPR:
         min_conf: float = 0.35,
         progress_callback: Callable[[int, int], None] | None = None,
         logger: PlateLogger | None = None,
+        save_video: bool = True,
     ) -> VideoResult:
         """
         Read a video, draw ALPR annotations on each processed frame, and write
@@ -532,6 +533,11 @@ class ALPR:
             min_conf: Minimum average OCR confidence to display annotation.
             progress_callback: Callback receiving ``(current_frame: int, total_frames: int)``.
             logger: Optional PlateLogger instance for deduplication and logging.
+            save_video: Whether to draw overlays and write the annotated output video.
+                Disable when only the plate log/CSV is needed: writing the output video
+                (encoding + disk I/O) can account for roughly a third of total pipeline
+                time, so skipping it is a substantial speedup with no effect on detection,
+                OCR, tracking, or logging, which all run independently of it.
 
         Returns:
             A :class:`VideoResult` with processing statistics.
@@ -565,17 +571,20 @@ class ALPR:
                     out = src_p.with_stem(src_p.stem + "_anpr")
             else:
                 out = Path(output_path)
-            out.parent.mkdir(parents=True, exist_ok=True)
 
-            # Resolve codec
-            fourcc_str = codec or _CODEC_MAP.get(out.suffix.lower(), "mp4v")
-            fourcc = cv2.VideoWriter.fourcc(*fourcc_str)
-            writer = cv2.VideoWriter(str(out), fourcc, fps, (width, height))
-            if not writer.isOpened():
-                raise RuntimeError(
-                    f"Failed to create video writer for {out} "
-                    f"(codec={fourcc_str}, {width}x{height} @ {fps:.1f}fps)"
-                )
+            writer: cv2.VideoWriter | None = None
+            if save_video:
+                out.parent.mkdir(parents=True, exist_ok=True)
+
+                # Resolve codec
+                fourcc_str = codec or _CODEC_MAP.get(out.suffix.lower(), "mp4v")
+                fourcc = cv2.VideoWriter.fourcc(*fourcc_str)
+                writer = cv2.VideoWriter(str(out), fourcc, fps, (width, height))
+                if not writer.isOpened():
+                    raise RuntimeError(
+                        f"Failed to create video writer for {out} "
+                        f"(codec={fourcc_str}, {width}x{height} @ {fps:.1f}fps)"
+                    )
 
             processed_frames = 0
             total_plates = 0
@@ -650,20 +659,23 @@ class ALPR:
                         smoothed_results.append(ALPRResult(detection=orig_det, ocr=smoothed_ocr))
 
                     last_smoothed_results = smoothed_results
-                    annotated_frame = _draw_plate_annotations(
-                        frame, smoothed_results, show_region=show_region
-                    )
-                    writer.write(annotated_frame)
+                    if writer is not None:
+                        annotated_frame = _draw_plate_annotations(
+                            frame, smoothed_results, show_region=show_region
+                        )
+                        writer.write(annotated_frame)
                     total_plates += len(smoothed_results)
                     processed_frames += 1
-                elif last_smoothed_results:
-                    # Carry forward active track overlays across skipped frames to avoid flicker
-                    inter_annotated = _draw_plate_annotations(
-                        frame, last_smoothed_results, show_region=show_region
-                    )
-                    writer.write(inter_annotated)
-                else:
-                    writer.write(frame)
+                elif writer is not None:
+                    if last_smoothed_results:
+                        # Carry forward active track overlays across skipped frames to avoid
+                        # flicker
+                        inter_annotated = _draw_plate_annotations(
+                            frame, last_smoothed_results, show_region=show_region
+                        )
+                        writer.write(inter_annotated)
+                    else:
+                        writer.write(frame)
 
                 if progress_callback is not None and total_frames > 0:
                     progress_callback(frame_idx + 1, total_frames)
@@ -671,7 +683,8 @@ class ALPR:
                 frame_idx += 1
 
             elapsed = time.perf_counter() - t0
-            writer.release()
+            if writer is not None:
+                writer.release()
 
             return VideoResult(
                 output_path=str(out),

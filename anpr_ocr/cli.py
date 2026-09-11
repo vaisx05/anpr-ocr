@@ -151,6 +151,12 @@ def _create_main_parser() -> argparse.ArgumentParser:
         help="Upscale plate crops narrower than this width (in px) before OCR (0 to disable).",
     )
     video_parser.add_argument(
+        "--no-video",
+        action="store_true",
+        default=False,
+        help="Skip drawing/writing the annotated output video (only produce the plate log/CSV).",
+    )
+    video_parser.add_argument(
         "--region-hint",
         help=(
             "Known region/country of the footage (e.g. 'UAE'). Overrides the OCR model's "
@@ -374,6 +380,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             forward_args.append("--directml")
         if getattr(args, "openvino", None):
             forward_args.extend(["--openvino", str(args.openvino)])
+        if args.command == "video" and getattr(args, "no_video", False):
+            forward_args.append("--no-video")
         if args.csv:
             forward_args.extend(["--csv", str(args.csv)])
         if getattr(args, "no_csv", False):

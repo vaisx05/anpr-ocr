@@ -148,6 +148,17 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--no-video",
+        action="store_true",
+        default=False,
+        help=(
+            "Skip drawing overlays and writing the annotated output video (only produce the "
+            "plate log/CSV). Encoding + writing the output video can account for roughly a "
+            "third of total processing time, so this is a substantial speedup when the "
+            "annotated video isn't needed."
+        ),
+    )
+    parser.add_argument(
         "--region-hint",
         default=None,
         help=(
@@ -683,7 +694,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"      {DIM}Resolution:{RESET} {width}x{height} @ {src_fps:.1f} fps, "
             f"{total_frames if total_frames > 0 else 'unknown'} frames"
         )
-        print(f"      {DIM}Saving to:{RESET}  {output_path.name}")
+        if args.no_video:
+            print(f"      {DIM}Saving to:{RESET}  (skipped, --no-video)")
+        else:
+            print(f"      {DIM}Saving to:{RESET}  {output_path.name}")
 
         progress = _make_progress_callback(total_frames)
         t_start = time.perf_counter()
@@ -695,6 +709,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             min_chars=args.min_chars,
             progress_callback=progress,
             logger=logger,
+            save_video=not args.no_video,
         )
         elapsed = time.perf_counter() - t_start
         total_pipeline_time += elapsed
@@ -749,8 +764,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  {BOLD}Total processing time:{RESET}  {total_pipeline_time:.2f}s")
     print(f"  {BOLD}Effective throughput:{RESET}   {overall_fps:.1f} fps")
     print()
-    out_dir_display = args.output if (args.output and args.output.is_dir()) else OUTPUT_DIR
-    print(f"  {GREEN}[OK] Annotated videos saved to:{RESET} {out_dir_display}")
+    if not args.no_video:
+        out_dir_display = args.output if (args.output and args.output.is_dir()) else OUTPUT_DIR
+        print(f"  {GREEN}[OK] Annotated videos saved to:{RESET} {out_dir_display}")
     print(f"{BOLD}{CYAN}{'=' * 72}{RESET}")
     print()
 
