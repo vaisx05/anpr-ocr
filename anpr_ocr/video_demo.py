@@ -92,13 +92,13 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--detector",
-        default="yolo-v9-s-608-license-plate-end2end",
-        help="Detector model name (default: yolo-v9-s-608-license-plate-end2end).",
+        default="yolo-v9-t-416-license-plate-end2end",
+        help="Detector model name (default: yolo-v9-t-416-license-plate-end2end).",
     )
     parser.add_argument(
         "--ocr",
-        default="cct-s-v2-global-model",
-        help="OCR model name (default: cct-s-v2-global-model).",
+        default="cct-xs-v2-global-model",
+        help="OCR model name (default: cct-xs-v2-global-model).",
     )
     parser.add_argument(
         "--codec",

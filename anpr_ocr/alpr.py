@@ -184,11 +184,11 @@ class ALPR:
         self,
         detector: BaseDetector | None = None,
         ocr: BaseOCR | None = None,
-        detector_model: PlateDetectorModel = "yolo-v9-s-608-license-plate-end2end",
+        detector_model: PlateDetectorModel = "yolo-v9-t-416-license-plate-end2end",
         detector_conf_thresh: float = 0.4,
         detector_providers: Sequence[str | tuple[str, dict]] | None = None,
         detector_sess_options: ort.SessionOptions | None = None,
-        ocr_model: OcrModel | None = "cct-s-v2-global-model",
+        ocr_model: OcrModel | None = "cct-xs-v2-global-model",
         ocr_device: Literal["cuda", "cpu", "auto"] = "auto",
         ocr_providers: Sequence[str | tuple[str, dict]] | None = None,
         ocr_sess_options: ort.SessionOptions | None = None,
@@ -209,12 +209,12 @@ class ALPR:
             detector: An instance of BaseDetector. If None, the DefaultDetector is used.
             ocr: An instance of BaseOCR. If None, the DefaultOCR is used.
             detector_model: The name of the detector model or a PlateDetectorModel enum instance.
-                Defaults to "yolo-v9-s-608-license-plate-end2end".
+                Defaults to "yolo-v9-t-416-license-plate-end2end".
             detector_conf_thresh: Confidence threshold for the detector.
             detector_providers: Execution providers for the detector.
             detector_sess_options: Session options for the detector.
             ocr_model: The name of the OCR model from the model hub.
-                Defaults to "cct-s-v2-global-model". This can be None if `ocr_model_path` and
+                Defaults to "cct-xs-v2-global-model". This can be None if `ocr_model_path` and
                 `ocr_config_path` parameters are passed.
             ocr_device: The device to run the OCR model on ("cuda", "cpu", or "auto").
             ocr_providers: Execution providers for the OCR. If None, the default providers are used.

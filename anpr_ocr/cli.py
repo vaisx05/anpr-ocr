@@ -52,13 +52,13 @@ def _create_main_parser() -> argparse.ArgumentParser:
     )
     image_parser.add_argument(
         "--detector",
-        default="yolo-v9-s-608-license-plate-end2end",
-        help="Detector model name (default: yolo-v9-s-608-license-plate-end2end).",
+        default="yolo-v9-t-416-license-plate-end2end",
+        help="Detector model name (default: yolo-v9-t-416-license-plate-end2end).",
     )
     image_parser.add_argument(
         "--ocr",
-        default="cct-s-v2-global-model",
-        help="OCR model name (default: cct-s-v2-global-model).",
+        default="cct-xs-v2-global-model",
+        help="OCR model name (default: cct-xs-v2-global-model).",
     )
     image_parser.add_argument(
         "--expected",
@@ -110,12 +110,12 @@ def _create_main_parser() -> argparse.ArgumentParser:
     )
     video_parser.add_argument(
         "--detector",
-        default="yolo-v9-s-608-license-plate-end2end",
+        default="yolo-v9-t-416-license-plate-end2end",
         help="Detector model name.",
     )
     video_parser.add_argument(
         "--ocr",
-        default="cct-s-v2-global-model",
+        default="cct-xs-v2-global-model",
         help="OCR model name.",
     )
     video_parser.add_argument(
@@ -205,12 +205,12 @@ def _create_main_parser() -> argparse.ArgumentParser:
     )
     stream_parser.add_argument(
         "--detector",
-        default="yolo-v9-s-608-license-plate-end2end",
+        default="yolo-v9-t-416-license-plate-end2end",
         help="Detector model name.",
     )
     stream_parser.add_argument(
         "--ocr",
-        default="cct-s-v2-global-model",
+        default="cct-xs-v2-global-model",
         help="OCR model name.",
     )
     stream_parser.add_argument(
