@@ -125,6 +125,32 @@ def _create_main_parser() -> argparse.ArgumentParser:
         help="Detector confidence threshold (default: 0.35).",
     )
     video_parser.add_argument(
+        "--enhance-contrast",
+        action="store_true",
+        help="Apply CLAHE contrast enhancement before OCR (helps read small/low-contrast text).",
+    )
+    video_parser.add_argument(
+        "--crop-margin-x",
+        type=float,
+        default=0.05,
+        help=(
+            "Fractional horizontal margin around detected bounding boxes (default: 0.05). "
+            "Widen this for plates with a side region/emirate code panel (e.g. UAE plates)."
+        ),
+    )
+    video_parser.add_argument(
+        "--crop-margin-y",
+        type=float,
+        default=0.05,
+        help="Fractional vertical margin around detected bounding boxes (default: 0.05).",
+    )
+    video_parser.add_argument(
+        "--min-plate-width",
+        type=int,
+        default=0,
+        help="Upscale plate crops narrower than this width (in px) before OCR (0 to disable).",
+    )
+    video_parser.add_argument(
         "--directml",
         action="store_true",
         default=False,
@@ -296,6 +322,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             forward_args.extend(["--ocr", str(args.ocr)])
         if getattr(args, "conf_thresh", None) is not None:
             forward_args.extend(["--conf-thresh", str(args.conf_thresh)])
+        if args.command == "video":
+            if getattr(args, "enhance_contrast", False):
+                forward_args.append("--enhance-contrast")
+            if getattr(args, "crop_margin_x", None) is not None:
+                forward_args.extend(["--crop-margin-x", str(args.crop_margin_x)])
+            if getattr(args, "crop_margin_y", None) is not None:
+                forward_args.extend(["--crop-margin-y", str(args.crop_margin_y)])
+            if getattr(args, "min_plate_width", None):
+                forward_args.extend(["--min-plate-width", str(args.min_plate_width)])
         if args.directml:
             forward_args.append("--directml")
         if args.csv:

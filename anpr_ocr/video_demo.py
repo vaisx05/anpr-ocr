@@ -123,6 +123,31 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Apply CLAHE contrast enhancement before OCR.",
     )
     parser.add_argument(
+        "--crop-margin-x",
+        type=float,
+        default=0.05,
+        help=(
+            "Fractional horizontal margin around detected bounding boxes (default: 0.05). "
+            "Widen this (e.g. 0.15-0.2) for plates with a side region/emirate code panel "
+            "just outside the detector's box (e.g. UAE plates), so it isn't cropped out."
+        ),
+    )
+    parser.add_argument(
+        "--crop-margin-y",
+        type=float,
+        default=0.05,
+        help="Fractional vertical margin around detected bounding boxes (default: 0.05).",
+    )
+    parser.add_argument(
+        "--min-plate-width",
+        type=int,
+        default=0,
+        help=(
+            "Upscale plate crops narrower than this width (in px) before OCR (0 to disable). "
+            "Helps the model read small text like a side region/emirate code panel."
+        ),
+    )
+    parser.add_argument(
         "--min-chars",
         type=int,
         default=4,
@@ -500,6 +525,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         ocr_model=cast(OcrModel, args.ocr),
         detector_conf_thresh=args.conf_thresh,
         enhance_contrast=args.enhance_contrast,
+        crop_margin_x=args.crop_margin_x,
+        crop_margin_y=args.crop_margin_y,
+        min_plate_width=args.min_plate_width,
         detector_providers=providers,
         ocr_providers=providers,
         syntax_pattern=syntax,

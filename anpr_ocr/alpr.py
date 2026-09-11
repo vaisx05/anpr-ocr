@@ -196,6 +196,8 @@ class ALPR:
         ocr_config_path: str | os.PathLike | None = None,
         ocr_force_download: bool = False,
         crop_margin: float = 0.05,
+        crop_margin_x: float | None = None,
+        crop_margin_y: float | None = None,
         enhance_contrast: bool = False,
         min_plate_width: int = 0,
         syntax_pattern: str | Sequence[str] | None = None,
@@ -225,11 +227,17 @@ class ALPR:
             ocr_force_download: Whether to force download the OCR model.
             crop_margin: Fractional margin padding around detected bounding boxes (default: 0.05).
                 Helps prevent edge characters from being truncated.
+            crop_margin_x: Optional horizontal override for crop_margin. Widen this for plate
+                layouts where a region/emirate code sits in a side panel just outside the
+                detector's box (e.g. UAE plates), so it isn't cropped out before OCR.
+            crop_margin_y: Optional vertical override for crop_margin.
             enhance_contrast: Whether to apply CLAHE contrast enhancement before OCR inference.
             min_plate_width: Minimum width to upscale small crops to (0 to disable).
             syntax_pattern: Optional mask to disambiguate characters (e.g. 'LLDDLLDDDD').
         """
         self.crop_margin = crop_margin
+        self.crop_margin_x = crop_margin_x if crop_margin_x is not None else crop_margin
+        self.crop_margin_y = crop_margin_y if crop_margin_y is not None else crop_margin
         self.enhance_contrast = enhance_contrast
         self.min_plate_width = min_plate_width
         self.syntax_pattern = syntax_pattern
@@ -287,7 +295,7 @@ class ALPR:
         alpr_results: list[ALPRResult] = []
         for detection in plate_detections:
             bbox = detection.bounding_box
-            if self.crop_margin > 0:
+            if self.crop_margin_x > 0 or self.crop_margin_y > 0:
                 x1, y1, x2, y2 = pad_bounding_box(
                     bbox.x1,
                     bbox.y1,
@@ -295,8 +303,8 @@ class ALPR:
                     bbox.y2,
                     img.shape[1],
                     img.shape[0],
-                    margin_x=self.crop_margin,
-                    margin_y=self.crop_margin,
+                    margin_x=self.crop_margin_x,
+                    margin_y=self.crop_margin_y,
                 )
             else:
                 x1, y1 = max(bbox.x1, 0), max(bbox.y1, 0)
