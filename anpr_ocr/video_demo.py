@@ -148,6 +148,15 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--region-hint",
+        default=None,
+        help=(
+            "Known region/country of the footage (e.g. 'UAE'). Overrides the OCR model's own "
+            "per-plate region guess, which has no class for some regions and guesses lookalike "
+            "countries instead (e.g. Qatar/Norway for UAE plates)."
+        ),
+    )
+    parser.add_argument(
         "--min-chars",
         type=int,
         default=4,
@@ -528,6 +537,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         crop_margin_x=args.crop_margin_x,
         crop_margin_y=args.crop_margin_y,
         min_plate_width=args.min_plate_width,
+        region_hint=args.region_hint,
         detector_providers=providers,
         ocr_providers=providers,
         syntax_pattern=syntax,

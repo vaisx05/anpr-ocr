@@ -151,6 +151,13 @@ def _create_main_parser() -> argparse.ArgumentParser:
         help="Upscale plate crops narrower than this width (in px) before OCR (0 to disable).",
     )
     video_parser.add_argument(
+        "--region-hint",
+        help=(
+            "Known region/country of the footage (e.g. 'UAE'). Overrides the OCR model's "
+            "unreliable per-plate region guess, which has no class for some regions."
+        ),
+    )
+    video_parser.add_argument(
         "--directml",
         action="store_true",
         default=False,
@@ -331,6 +338,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 forward_args.extend(["--crop-margin-y", str(args.crop_margin_y)])
             if getattr(args, "min_plate_width", None):
                 forward_args.extend(["--min-plate-width", str(args.min_plate_width)])
+            if getattr(args, "region_hint", None):
+                forward_args.extend(["--region-hint", str(args.region_hint)])
         if args.directml:
             forward_args.append("--directml")
         if args.csv:

@@ -201,6 +201,7 @@ class ALPR:
         enhance_contrast: bool = False,
         min_plate_width: int = 0,
         syntax_pattern: str | Sequence[str] | None = None,
+        region_hint: str | None = None,
     ) -> None:
         """
         Initialize the ALPR system.
@@ -234,6 +235,9 @@ class ALPR:
             enhance_contrast: Whether to apply CLAHE contrast enhancement before OCR inference.
             min_plate_width: Minimum width to upscale small crops to (0 to disable).
             syntax_pattern: Optional mask to disambiguate characters (e.g. 'LLDDLLDDDD').
+            region_hint: Optional known region/country label for the footage's source (e.g. "UAE").
+                Overrides the OCR model's own per-plate region guess, which is unreliable for
+                regions it has no class for.
         """
         self.crop_margin = crop_margin
         self.crop_margin_x = crop_margin_x if crop_margin_x is not None else crop_margin
@@ -262,6 +266,7 @@ class ALPR:
             enhance_contrast=enhance_contrast,
             min_plate_width=min_plate_width,
             syntax_pattern=syntax_pattern,
+            region_hint=region_hint,
         )
 
     def predict(self, frame: np.ndarray | str | os.PathLike) -> list[ALPRResult]:

@@ -44,6 +44,7 @@ class DefaultOCR(BaseOCR):
         enhance_contrast: bool = False,
         min_plate_width: int = 0,
         syntax_pattern: str | Sequence[str] | None = None,
+        region_hint: str | None = None,
     ) -> None:
         """
         Initialize the DefaultOCR with the specified parameters. Uses `fast-plate-ocr`'s
@@ -66,6 +67,11 @@ class DefaultOCR(BaseOCR):
             enhance_contrast: If True, applies CLAHE contrast enhancement before OCR inference.
             min_plate_width: Minimum width to upscale small crops to (0 to disable).
             syntax_pattern: Optional mask to disambiguate characters (e.g. 'LLDDLLDDDD').
+            region_hint: Optional known region/country label for the footage's source (e.g. "UAE").
+                The bundled OCR model's own region-classification head is unreliable for regions it
+                wasn't trained on (it has no UAE class, for example, so it guesses lookalike
+                countries), so a hint overrides both the displayed region and the UAE-specific
+                character-healing decision instead of trusting that per-plate model guess.
         """
         self.ocr_model = LicensePlateRecognizer(
             hub_ocr_model=hub_ocr_model,
@@ -79,6 +85,8 @@ class DefaultOCR(BaseOCR):
         self.enhance_contrast = enhance_contrast
         self.min_plate_width = min_plate_width
         self.syntax_pattern = syntax_pattern
+        self.region_hint = region_hint
+        self._region_hint_is_uae = region_hint is not None and is_uae_region(region_hint)
 
     def _run_single_crop(
         self, crop: np.ndarray
@@ -138,7 +146,7 @@ class DefaultOCR(BaseOCR):
 
         # 1. Baseline 1-row OCR prediction
         t1, c1, r1, rp1 = self._run_single_crop(cropped_plate)
-        uae_plate = is_uae_region(r1)
+        uae_plate = getattr(self, "_region_hint_is_uae", False) or is_uae_region(r1)
         if self.syntax_pattern and t1:
             t1 = disambiguate_plate(t1, self.syntax_pattern, apply_indian_healing=not uae_plate)
 
@@ -156,7 +164,7 @@ class DefaultOCR(BaseOCR):
             if len(tt) >= 2 and len(tb) >= 2:
                 t2 = tt + tb
                 c2 = ct + cb
-                uae_two_row_plate = is_uae_region(rt)
+                uae_two_row_plate = getattr(self, "_region_hint_is_uae", False) or is_uae_region(rt)
                 if self.syntax_pattern:
                     t2 = disambiguate_plate(
                         t2, self.syntax_pattern, apply_indian_healing=not uae_two_row_plate
@@ -173,21 +181,30 @@ class DefaultOCR(BaseOCR):
 
                 if is_valid_indian_2row and not is_valid_indian_1row:
                     return OcrResult(
-                        text=h2, confidence=c2, region=rt or r1, region_confidence=rpt or rp1
+                        text=h2,
+                        confidence=c2,
+                        region=getattr(self, "region_hint", None) or rt or r1,
+                        region_confidence=rpt or rp1,
                     )
                 elif is_valid_indian_2row and is_valid_indian_1row:
                     if len(h2) > len(h1) or (len(h2) == len(h1) and mean_c2 > mean_c1):
                         return OcrResult(
-                            text=h2, confidence=c2, region=rt or r1, region_confidence=rpt or rp1
+                            text=h2,
+                            confidence=c2,
+                            region=getattr(self, "region_hint", None) or rt or r1,
+                            region_confidence=rpt or rp1,
                         )
                 elif mean_c1 < 0.65 and mean_c2 >= 0.80 and len(t2) <= 10:
                     return OcrResult(
-                        text=h2, confidence=c2, region=rt or r1, region_confidence=rpt or rp1
+                        text=h2,
+                        confidence=c2,
+                        region=getattr(self, "region_hint", None) or rt or r1,
+                        region_confidence=rpt or rp1,
                     )
 
         return OcrResult(
             text=h1,
             confidence=c1,
-            region=r1,
+            region=getattr(self, "region_hint", None) or r1,
             region_confidence=rp1,
         )
