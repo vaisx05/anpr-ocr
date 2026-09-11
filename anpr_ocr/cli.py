@@ -158,6 +158,24 @@ def _create_main_parser() -> argparse.ArgumentParser:
         ),
     )
     video_parser.add_argument(
+        "--intra-threads",
+        type=int,
+        default=0,
+        help="ONNX Runtime intra-op thread count (0 = auto).",
+    )
+    video_parser.add_argument(
+        "--inter-threads",
+        type=int,
+        default=0,
+        help="ONNX Runtime inter-op thread count (0 = auto).",
+    )
+    video_parser.add_argument(
+        "--graph-opt",
+        choices=["disable", "basic", "extended", "all"],
+        default="all",
+        help="ONNX Runtime graph optimization level (default: all).",
+    )
+    video_parser.add_argument(
         "--directml",
         action="store_true",
         default=False,
@@ -340,6 +358,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 forward_args.extend(["--min-plate-width", str(args.min_plate_width)])
             if getattr(args, "region_hint", None):
                 forward_args.extend(["--region-hint", str(args.region_hint)])
+            if getattr(args, "intra_threads", None):
+                forward_args.extend(["--intra-threads", str(args.intra_threads)])
+            if getattr(args, "inter_threads", None):
+                forward_args.extend(["--inter-threads", str(args.inter_threads)])
+            if getattr(args, "graph_opt", None):
+                forward_args.extend(["--graph-opt", str(args.graph_opt)])
         if args.directml:
             forward_args.append("--directml")
         if args.csv:

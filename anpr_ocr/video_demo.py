@@ -157,6 +157,24 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--intra-threads",
+        type=int,
+        default=0,
+        help="ONNX Runtime intra-op thread count (0 = auto/ORT default).",
+    )
+    parser.add_argument(
+        "--inter-threads",
+        type=int,
+        default=0,
+        help="ONNX Runtime inter-op thread count (0 = auto/ORT default).",
+    )
+    parser.add_argument(
+        "--graph-opt",
+        choices=["disable", "basic", "extended", "all"],
+        default="all",
+        help="ONNX Runtime graph optimization level (default: all).",
+    )
+    parser.add_argument(
         "--min-chars",
         type=int,
         default=4,
@@ -514,10 +532,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     print()
 
     # -- Configure Execution Providers (DirectML GPU or CPU) ---------------
+    import onnxruntime as ort
+
     providers = None
     if args.directml:
-        import onnxruntime as ort
-
         if "DmlExecutionProvider" in ort.get_available_providers():
             providers = ["DmlExecutionProvider", "CPUExecutionProvider"]
             print(
@@ -525,6 +543,26 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         else:
             print(f"  {YELLOW}[WARN] DirectML provider not available, falling back to CPU{RESET}")
+
+    # -- Configure ONNX Runtime session options (threading / graph opt) -----
+    graph_opt_levels = {
+        "disable": ort.GraphOptimizationLevel.ORT_DISABLE_ALL,
+        "basic": ort.GraphOptimizationLevel.ORT_ENABLE_BASIC,
+        "extended": ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED,
+        "all": ort.GraphOptimizationLevel.ORT_ENABLE_ALL,
+    }
+
+    def _build_sess_options() -> ort.SessionOptions:
+        opts = ort.SessionOptions()
+        opts.graph_optimization_level = graph_opt_levels[args.graph_opt]
+        if args.intra_threads > 0:
+            opts.intra_op_num_threads = args.intra_threads
+        if args.inter_threads > 0:
+            opts.inter_op_num_threads = args.inter_threads
+        return opts
+
+    detector_sess_options = _build_sess_options()
+    ocr_sess_options = _build_sess_options()
 
     # -- Load models ---------------------------------------------------------
     print(f"  {YELLOW}Loading models...{RESET}", end="", flush=True)
@@ -540,6 +578,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         region_hint=args.region_hint,
         detector_providers=providers,
         ocr_providers=providers,
+        detector_sess_options=detector_sess_options,
+        ocr_sess_options=ocr_sess_options,
         syntax_pattern=syntax,
     )
     load_ms = (time.perf_counter() - t0) * 1000
