@@ -182,6 +182,12 @@ def _create_main_parser() -> argparse.ArgumentParser:
         help="Enable DirectML GPU acceleration.",
     )
     video_parser.add_argument(
+        "--openvino",
+        choices=["cpu", "gpu-fp16", "gpu-fp32"],
+        default=None,
+        help="Enable the OpenVINO execution provider (CPU or Intel iGPU).",
+    )
+    video_parser.add_argument(
         "--play",
         "--live",
         dest="play",
@@ -366,6 +372,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 forward_args.extend(["--graph-opt", str(args.graph_opt)])
         if args.directml:
             forward_args.append("--directml")
+        if getattr(args, "openvino", None):
+            forward_args.extend(["--openvino", str(args.openvino)])
         if args.csv:
             forward_args.extend(["--csv", str(args.csv)])
         if getattr(args, "no_csv", False):

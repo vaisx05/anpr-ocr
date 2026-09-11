@@ -194,6 +194,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Enable DirectML GPU acceleration (Intel Iris Xe / AMD / NVIDIA).",
     )
     parser.add_argument(
+        "--openvino",
+        choices=["cpu", "gpu-fp16", "gpu-fp32"],
+        default=None,
+        help=(
+            "Enable the OpenVINO execution provider (requires the onnxruntime-openvino package, "
+            "which replaces plain onnxruntime). 'cpu' targets CPU_FP32, 'gpu-fp16'/'gpu-fp32' "
+            "target the Intel integrated GPU."
+        ),
+    )
+    parser.add_argument(
         "--csv",
         type=Path,
         default=None,
@@ -543,6 +553,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         else:
             print(f"  {YELLOW}[WARN] DirectML provider not available, falling back to CPU{RESET}")
+    elif args.openvino:
+        if "OpenVINOExecutionProvider" in ort.get_available_providers():
+            device_type = {
+                "cpu": "CPU_FP32",
+                "gpu-fp16": "GPU_FP16",
+                "gpu-fp32": "GPU_FP32",
+            }[args.openvino]
+            providers = [
+                ("OpenVINOExecutionProvider", {"device_type": device_type}),
+                "CPUExecutionProvider",
+            ]
+            print(f"  {GREEN}[GPU] OpenVINO execution provider ENABLED ({device_type}){RESET}")
+        else:
+            print(
+                f"  {YELLOW}[WARN] OpenVINOExecutionProvider not available "
+                f"(install the onnx-openvino extra), falling back to CPU{RESET}"
+            )
 
     # -- Configure ONNX Runtime session options (threading / graph opt) -----
     graph_opt_levels = {
