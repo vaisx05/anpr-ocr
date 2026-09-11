@@ -31,7 +31,18 @@ from anpr_ocr.utils import (
 # pylint: disable=too-many-arguments, too-many-locals
 # ruff: noqa: PLR0913, PLR0912, PLR0915
 
-SUPPORTED_VIDEO_EXTS = {".mp4", ".avi", ".mkv", ".mov", ".webm", ".flv", ".wmv", ".m4v"}
+SUPPORTED_VIDEO_EXTS = {
+    ".mp4",
+    ".avi",
+    ".mkv",
+    ".mov",
+    ".webm",
+    ".flv",
+    ".wmv",
+    ".m4v",
+    ".mjpeg",
+    ".mjpg",
+}
 """Video file extensions supported for inference."""
 
 # Default fourcc codecs by output extension

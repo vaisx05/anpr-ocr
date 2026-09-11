@@ -604,7 +604,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         # Headless Processing Mode
         cap = cv2.VideoCapture(v_source if isinstance(v_source, int) else str(v_source))
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # Some containers (e.g. raw MJPEG streams) report a garbage/negative frame count.
+        total_frames = max(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
         src_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -612,7 +613,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         print(f"  {BOLD}[{idx}/{len(video_files)}] Processing: {display_name}{RESET}")
         print(
-            f"      {DIM}Resolution:{RESET} {width}x{height} @ {src_fps:.1f} fps, {total_frames} frames"
+            f"      {DIM}Resolution:{RESET} {width}x{height} @ {src_fps:.1f} fps, "
+            f"{total_frames if total_frames > 0 else 'unknown'} frames"
         )
         print(f"      {DIM}Saving to:{RESET}  {output_path.name}")
 
